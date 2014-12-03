@@ -218,6 +218,20 @@ func (c *WorkClient) Log(level, msg string, err error) {
 	c.events <- LogEvent{level, msg, err, nil}
 }
 
+// LogInfo will log the message as an info level
+func (c *WorkClient) LogInfo(msg string) {
+	c.events <- LogEvent{"info", msg, nil, nil}
+}
+
+func (c *WorkClient) LogInfoF(format string, vals ...interface{}) {
+	c.events <- LogEvent{"info", fmt.Sprintf(format, vals...), nil, nil}
+}
+
+// LogF will log the given level and formatted values
+func (c *WorkClient) LogF(level, format string, vals ...interface{}) {
+	c.events <- LogEvent{level, fmt.Sprintf(format, vals...), nil, nil}
+}
+
 // LogErr will log a simple error level event
 func (c *WorkClient) LogErr(err error) {
 	c.events <- LogEvent{"error", "", err, nil}
