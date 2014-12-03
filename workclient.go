@@ -19,6 +19,7 @@ import (
 
 type WorkClient struct {
 	Config             *Config
+	Header             string
 	MarshalledConfig   string
 	quit               chan struct{}
 	logclosed          chan struct{}
@@ -51,6 +52,7 @@ func (client *WorkClient) Configure(config *Config, executeWorkFn, closeExecuteW
 	client.closeExecuteWorkFn = closeExecuteWorkFn
 	client.gaugeMap = make(map[string]metrics.Gauge)
 	client.timeMap = make(map[string]metrics.Timer)
+	client.Header = "%s v%s, pid: %v"
 	client.Config = config
 
 	if client.Config.Hostname == "" {
@@ -108,7 +110,7 @@ func (c *WorkClient) Run() {
 
 	// write the status to standard output
 	pid := os.Getpid()
-	c.events <- LogEvent{"info", fmt.Sprintf(Header, c.Config.ServiceName, Version, pid), nil, nil}
+	c.events <- LogEvent{"info", fmt.Sprintf(c.Header, c.Config.ServiceName, Version, pid), nil, nil}
 
 	// execute the specified work handled by this process
 	c.executeWorkFn()
