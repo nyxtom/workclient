@@ -21,6 +21,7 @@ type WorkClient struct {
 	Header             string
 	Version            string
 	marshalledConfig   string
+	closed             bool
 	quit               chan struct{}
 	logclosed          chan struct{}
 	runtimeclosed      chan struct{}
@@ -74,7 +75,7 @@ func (client *WorkClient) Configure(config *Config, executeWorkFn, closeExecuteW
 
 // Runs all goroutines for signals, closing, connect routines..etc
 func (c *WorkClient) Run() {
-	defer func() {
+	go func() {
 		<-c.quit
 		os.Exit(0)
 	}()
@@ -298,14 +299,17 @@ func (c *WorkClient) writeLogs() {
 
 // Close the running client appropriately
 func (c *WorkClient) Close() {
-	c.closeExecuteWorkFn()
+	if !c.closed {
+		c.closed = true
+		c.closeExecuteWorkFn()
 
-	// close the log event buffer, runtime stats, and heartbeat
-	close(c.runtimeclosed)
-	close(c.heartbeatclosed)
-	close(c.events)
-	<-c.logclosed
+		// close the log event buffer, runtime stats, and heartbeat
+		close(c.runtimeclosed)
+		close(c.heartbeatclosed)
+		close(c.events)
+		<-c.logclosed
 
-	// close the application
-	close(c.quit)
+		// close the application
+		close(c.quit)
+	}
 }
