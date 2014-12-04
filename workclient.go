@@ -6,8 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
-	"os/signal"
-	"syscall"
+
 	"time"
 
 	"github.com/rcrowley/go-metrics"
@@ -21,7 +20,7 @@ type WorkClient struct {
 	Config             *Config
 	Header             string
 	Version            string
-	MarshalledConfig   string
+	marshalledConfig   string
 	quit               chan struct{}
 	logclosed          chan struct{}
 	runtimeclosed      chan struct{}
@@ -56,6 +55,9 @@ func (client *WorkClient) Configure(config *Config, executeWorkFn, closeExecuteW
 	client.Header = "%s v%s, pid: %v"
 	client.Version = fmt.Sprintf("%v", time.Now().Unix())
 	client.Config = config
+
+	marshalledConfig, _ := json.Marshal(&config)
+	client.marshalledConfig = string(marshalledConfig)
 
 	if client.Config.Hostname == "" {
 		if len(os.Getenv("HOSTNAME")) != 0 {
@@ -107,9 +109,6 @@ func (c *WorkClient) Run() {
 	// write event logs
 	go c.writeLogs()
 
-	// attach to exit signals
-	c.attachSignals()
-
 	// write the status to standard output
 	pid := os.Getpid()
 	c.events <- LogEvent{"info", fmt.Sprintf(c.Header, c.Config.ServiceName, c.Version, pid), nil, nil}
@@ -129,7 +128,7 @@ func (c *WorkClient) writeServiceHeartbeat() {
 			c.heartbeatTicker.Stop()
 			return
 		case <-c.heartbeatTicker.C:
-			_, err := c.etcdClient.Set(key, c.MarshalledConfig, uint64(c.Config.EtcdHeartbeatTtl))
+			_, err := c.etcdClient.Set(key, c.marshalledConfig, uint64(c.Config.EtcdHeartbeatTtl))
 			if err != nil {
 				c.events <- LogEvent{"error", "etcd error", err, nil}
 			}
@@ -137,6 +136,7 @@ func (c *WorkClient) writeServiceHeartbeat() {
 	}
 }
 
+// NewGauge will create a gauge formatted with the service name and metric and register it with go-metrics
 func (c *WorkClient) NewGauge(metric string) metrics.Gauge {
 	g := metrics.NewGauge()
 	metrics.Register(fmt.Sprintf("%s.%s", c.Config.ServiceName, metric), g)
@@ -144,6 +144,7 @@ func (c *WorkClient) NewGauge(metric string) metrics.Gauge {
 	return g
 }
 
+// NewTimer will create a timer formatted with the service name and metric and register it with go-metrics
 func (c *WorkClient) NewTimer(metric string) metrics.Timer {
 	t := metrics.NewTimer()
 	metrics.Register(fmt.Sprintf("%s.%s", c.Config.ServiceName, metric), t)
@@ -307,20 +308,4 @@ func (c *WorkClient) Close() {
 
 	// close the application
 	close(c.quit)
-}
-
-// attachSignals will create a channel to OS.Signal to listen for any signup events..etc
-func (c *WorkClient) attachSignals() {
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT,
-		syscall.SIGKILL,
-		os.Interrupt)
-
-	go func() {
-		<-sc
-		c.Close()
-	}()
 }

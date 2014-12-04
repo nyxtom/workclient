@@ -57,6 +57,21 @@ func (s *SimpleService) stopExecute() {
 func main() {
 	cfg := new(workclient.Config)
 	service := NewSimpleService(cfg)
+
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT,
+		syscall.SIGKILL,
+		os.Interrupt)
+
+	go func() {
+		<-sc
+		service.Close()
+	}()
+
 	service.Run()
 }
 ```
