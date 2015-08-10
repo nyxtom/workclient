@@ -9,11 +9,9 @@ import (
 
 	"time"
 
-	"github.com/rcrowley/go-metrics"
-	"github.com/rcrowley/go-metrics/influxdb"
-
 	"github.com/coreos/go-etcd/etcd"
 	"github.com/quipo/statsd"
+	"github.com/rcrowley/go-metrics"
 )
 
 type WorkClient struct {
@@ -153,7 +151,7 @@ func (c *WorkClient) NewTimer(metric string) metrics.Timer {
 	return t
 }
 
-// writeRuntimeStats will simply use influxdb and statsd to write all relevant runtime statistics used for debugging and tracing load for the worker
+// writeRuntimeStats will simply use statsd to write all relevant runtime statistics used for debugging and tracing load for the worker
 func (c *WorkClient) writeRuntimeStats() {
 	// setup gauges to monitor with metrics
 	gauges := []string{"cpu_num", "num_gc", "goroutine_num", "cgo_call_num",
@@ -173,15 +171,6 @@ func (c *WorkClient) writeRuntimeStats() {
 	if c.Config.GraphiteAddr != "" {
 		addr, _ := net.ResolveTCPAddr("tcp", c.Config.GraphiteAddr)
 		go metrics.Graphite(metrics.DefaultRegistry, 10e9, c.Config.GraphitePrefix, addr)
-	}
-	// bind to periodic updates to influxdb
-	if c.Config.InfluxDbAddr != "" && c.Config.InfluxDbServiceMetricsDb != "" {
-		go influxdb.Influxdb(metrics.DefaultRegistry, 10e9, &influxdb.Config{
-			Host:     c.Config.InfluxDbAddr,
-			Database: c.Config.InfluxDbServiceMetricsDb,
-			Username: c.Config.InfluxDbUsername,
-			Password: c.Config.InfluxDbPassword,
-		})
 	}
 
 	for {

@@ -2,6 +2,7 @@ package workclient
 
 import "time"
 
+// Config represents a simple work service configuration
 type Config struct {
 	// Standard configuration values
 	StatsdAddr     string `toml:"statsd_addr"`
@@ -12,12 +13,6 @@ type Config struct {
 
 	GraphiteAddr   string `toml:"graphite_addr"`
 	GraphitePrefix string `toml:"graphite_prefix"`
-
-	InfluxDbAddr             string `toml:"influxdb_addr"`
-	InfluxDbDatabase         string `toml:"influxdb_database"`
-	InfluxDbUsername         string `toml:"influxdb_username"`
-	InfluxDbPassword         string `toml:"influxdb_password"`
-	InfluxDbServiceMetricsDb string `toml:"influxdb_service_metrics_db"`
 
 	EtcdAddr         string `toml:"etcd_addr"`
 	EtcdCaCert       string `toml:"etcd_cacert"`
