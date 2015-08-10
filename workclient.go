@@ -15,7 +15,7 @@ import (
 )
 
 type WorkClient struct {
-	Config             *Config
+	Config             Config
 	Header             string
 	Version            string
 	marshalledConfig   string
@@ -38,7 +38,7 @@ type WorkClient struct {
 }
 
 // Configure the client according to the given configuration and initialize state
-func (client *WorkClient) Configure(config *Config, executeWorkFn, closeExecuteWorkFn func()) {
+func (client *WorkClient) Configure(config Config, executeWorkFn, closeExecuteWorkFn func()) {
 	client.logclosed = make(chan struct{}, 1)
 	client.runtimeclosed = make(chan struct{}, 1)
 	client.heartbeatclosed = make(chan struct{}, 1)
